@@ -359,16 +359,19 @@ function addRow() {
 }
 
 function updateDriverList(rowId) {
-        const wharfStatus = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="wharfLocation"]`).value;
-        const constructionSiteStatus = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="constructionSite"]`).value;
+    const wharfStatus = document.getElementById(`wharfLocation${rowId}`).value;
+    const constructionSiteStatus = document.getElementById(`constructionSite${rowId}`).value;
 
-        // Convert string values to boolean (Yes -> true, No -> false)
-        const wharfStatusIsYes = (wharfStatus === "Yes");
-        const constructionSiteIsYes = (constructionSiteStatus === "Yes");
+    const wharfStatusIsYes = (wharfStatus === "Yes");
+    const constructionSiteIsYes = (constructionSiteStatus === "Yes");
+  
 
-        // Call the function to update the driver list based on Wharf and Construction Site status
-        populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes);
-    }
+    // Call the function to update the driver list based on criteria
+    populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes);
+   
+}
+
+
 
 function confirmJob(button) {
     const row = button.closest('tr'); // Get the row from the jobs list
@@ -421,62 +424,52 @@ function confirmJob(button) {
 }
 
 function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) {
-        const drivers = document.querySelectorAll('#driversTable tbody tr'); // Get all drivers from the drivers table
-        const driverSelect = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="driver"]`); // Driver dropdown in the roster table
-        driverSelect.innerHTML = ''; // Clear current options in the driver dropdown
+    const drivers = document.querySelectorAll('#driversTable tbody tr');
+    const driverSelect = document.getElementById(`driver${rowId}`);
+    driverSelect.innerHTML = ''; // Clear existing options
 
-        // Loop through all drivers in the drivers table
-        drivers.forEach(function(row) {
-            const driverName = row.cells[0].textContent; // Driver name
-            const onLeave = row.cells[1].querySelector('.onLeave').checked; // Is the driver on leave?
-            const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked; // Does the driver have MSIC?
-            const hasWhiteCard = row.cells[3].querySelector('.hasWhiteCard').checked; // Does the driver have a White Card?
+    let driverAdded = false; // Track if any driver is added
 
-            // Ensure the driver is not on leave
-            if (!onLeave) {
-                if (wharfStatusIsYes && constructionSiteIsYes) {
-                    // Both Wharf Status and Construction Site are Yes: Driver must have both MSIC and White Card
-                    if (hasMSIC && hasWhiteCard) {
-                        const option = document.createElement('option');
-                        option.value = driverName;
-                        option.textContent = driverName;
-                        driverSelect.appendChild(option);
-                    }
-                } else if (wharfStatusIsYes) {
-                    // Only Wharf Status is Yes: Driver must have MSIC
-                    if (hasMSIC) {
-                        const option = document.createElement('option');
-                        option.value = driverName;
-                        option.textContent = driverName;
-                        driverSelect.appendChild(option);
-                    }
-                } else if (constructionSiteIsYes) {
-                    // Only Construction Site is Yes: Driver must have White Card
-                    if (hasWhiteCard) {
-                        const option = document.createElement('option');
-                        option.value = driverName;
-                        option.textContent = driverName;
-                        driverSelect.appendChild(option);
-                    }
-                } else {
-                    // Neither Wharf Status nor Construction Site is Yes: Show all drivers who are not on leave
-                    const option = document.createElement('option');
-                    option.value = driverName;
-                    option.textContent = driverName;
-                    driverSelect.appendChild(option);
-                }
+    // Loop through drivers and apply filters based on conditions
+    drivers.forEach(function (row) {
+        const driverName = row.cells[0].textContent;
+        const onLeave = row.cells[1].querySelector('.onLeave').checked;
+        const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
+        const hasWhiteCard = row.cells[3].querySelector('.hasWhiteCard').checked;
+
+        // Check if the driver meets the criteria and is not on leave
+        if (!onLeave) {
+            let addDriver = false;
+
+            if (wharfStatusIsYes && constructionSiteIsYes) {
+                if (hasMSIC && hasWhiteCard) addDriver = true;
+            } else if (wharfStatusIsYes) {
+                if (hasMSIC) addDriver = true;
+            } else if (constructionSiteIsYes) {
+                if (hasWhiteCard) addDriver = true;
+            } else {
+                addDriver = true; // No restrictions, allow all drivers not on leave
             }
-        });
 
-        // If no drivers are available, show a message
-        if (driverSelect.length === 0) {
-            const noDriverOption = document.createElement('option');
-            noDriverOption.value = '';
-            noDriverOption.textContent = 'No drivers available';
-            driverSelect.appendChild(noDriverOption);
+            // If the driver meets the conditions, add them to the dropdown
+            if (addDriver) {
+                const option = document.createElement('option');
+                option.value = driverName;
+                option.textContent = driverName;
+                driverSelect.appendChild(option);
+                driverAdded = true;
+            }
         }
-    }
+    });
 
+    // If no drivers are added, show a message in the dropdown
+    if (!driverAdded) {
+        const noDriverOption = document.createElement('option');
+        noDriverOption.value = '';
+        noDriverOption.textContent = 'No drivers available';
+        driverSelect.appendChild(noDriverOption);
+    }
+}
     
 function populateDropDowns(rowId) {
     const drivers = document.querySelectorAll('#driversTable tbody tr');
@@ -495,6 +488,9 @@ function populateDropDowns(rowId) {
         option.value = row.cells[0].textContent;
         option.textContent = row.cells[0].textContent;
         regoSelect.appendChild(option);
+    });
+        $(document).ready(function() {
+        $('select').select2();
     });
 
     // Populate drivers dropdown
@@ -521,18 +517,34 @@ function populateDropDowns(rowId) {
             }
         }
     });
+    $(`#rego${rowId}, #driver${rowId}`).select2();
 }
+
 function refreshDriverDropdowns() {
-        const rows = document.querySelectorAll('#rosterTableBody tr');
-        rows.forEach((row, index) => {
-            const rowId = index + 1; // Get row ID
-            updateDriverList(rowId);  // Update driver list for each row
-        });
-    }
+    const rows = document.querySelectorAll('#rosterTableBody tr');
+    rows.forEach((row, index) => {
+        const rowId = index + 1;
+        updateDriverList(rowId); // Update the driver list for each row dynamically
+        $(`#driver${rowId}`).select2();  
+    });
+}
+
+// Ensure this is triggered when driver statuses change
+document.querySelectorAll('.onLeave, .hasMSIC, .hasWhiteCard').forEach(checkbox => {
+    checkbox.addEventListener('change', refreshDriverDropdowns);
+});
+
+
 function confirmRow(rowId) {
     const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
     const confirmButton = currentRowElement.querySelector('.confirm-btn');
+    const driverSelect = document.getElementById(`driver${rowId}`).value;
 
+    // Ensure a driver is selected before confirming
+    if (!driverSelect) {
+        alert('Please select a driver before confirming.');
+        return;
+    }
     // Toggle between Confirm and Edit
     if (confirmButton.textContent === "Confirm") {
         // Disable all inputs and dropdowns
@@ -561,24 +573,24 @@ function confirmRow(rowId) {
 
     // Function to add a new driver dynamically
     function addDriver() {
-        const newDriverName = document.getElementById('newDriverName').value.trim();
-        if (newDriverName !== "") {
-            const driversTable = document.getElementById('driversTable').querySelector('tbody');
-            const newRow = driversTable.insertRow();
+    const newDriverName = document.getElementById('newDriverName').value.trim();
+    if (newDriverName !== "") {
+        const driversTable = document.getElementById('driversTable').querySelector('tbody');
+        const newRow = driversTable.insertRow();
 
-            newRow.innerHTML = `
-                <td>${newDriverName}</td>
-                <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
-                <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
-                <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+        newRow.innerHTML = `
+            <td>${newDriverName}</td>
+            <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+        `;
 
-            `;
-
-            // Clear input and refresh dropdowns
-            document.getElementById('newDriverName').value = '';
-            populateDropDowns(currentRow);
-        }
+        // Clear input and refresh dropdowns
+        document.getElementById('newDriverName').value = '';
+        refreshDriverDropdowns();  // Refresh dropdowns across all rows
     }
+}
+
 
     // Function to add a new vehicle (rego) dynamically
     function addRego() {
