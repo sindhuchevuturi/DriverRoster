@@ -633,7 +633,7 @@ function addJob() {
 }
 
 function saveRoster(data) {
-    fetch('http://localhost:5000/save-roster', {
+    fetch('https://tasmandriverroster-a8hqh7hcd2gfbkc0.australiasoutheast-01.azurewebsites.net/save-roster', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -649,8 +649,9 @@ function saveRoster(data) {
     });
 }
 
+
 function saveDriver(data) {
-    fetch('http://localhost:5000/save-driver', {
+    fetch('https://tasmandriverroster-a8hqh7hcd2gfbkc0.australiasoutheast-01.azurewebsites.net/save-driver', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -665,6 +666,17 @@ function saveDriver(data) {
         console.error('Error saving driver:', error);
     });
 }
+function submitDriverForm() {
+    const driverData = {
+        name: document.getElementById('driverName').value,
+        onLeave: document.getElementById('onLeave').checked,
+        hasMSIC: document.getElementById('hasMSIC').checked,
+        hasWhiteCard: document.getElementById('hasWhiteCard').checked
+    };
+
+    saveDriver(driverData);
+}
+
 function collectRosterData() {
     const rosterData = {
         gek: document.getElementById('gek1').value,
