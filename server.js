@@ -1,21 +1,20 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const sql = require('mssql');
+const path = require('path');
+const sql = require('mssql');  // Assuming you're using mssql
 
-// Allow requests from your GitHub Pages domain
-const corsOptions = {
-    origin: 'https://<sindhuchevuturi.github.io>.github.io',
-    optionsSuccessStatus: 200
-};
-
+// Initialize the Express app
 const app = express();
 
-app.use(cors(corsOptions));  // Enable CORS for your frontend
-app.use(bodyParser.json());
+// Serve static files from the 'driver-roster-frontend' directory
+app.use(express.static(path.join(__dirname, 'driver-roster-frontend')));
 
-// Your existing routes and database configuration...
+// Handle the root route, send index.html as response
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'driver-roster-frontend', 'index.html'));
+});
 
-app.listen(5000, () => {
-    console.log('Backend server running on http://localhost:5000');
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Driver Roster Backend is running on http://localhost:${PORT}/`);
 });
