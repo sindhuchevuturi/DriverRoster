@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
-const sql = require('mssql');  // Assuming you're using mssql
+const sql = require('mssql');  // Declared once here
+const { getDbConfig } = require('./dbConfig');  // Import the configuration
 
 // Initialize the Express app
 const app = express();
@@ -18,8 +19,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Driver Roster Backend is running on http://localhost:${PORT}/`);
 });
-
-const { getDbConfig } = require('./dbConfig');  // Import the configuration
 
 // Function to connect to the database and run a query
 async function connectToDatabase() {
