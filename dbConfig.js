@@ -1,11 +1,13 @@
+require('dotenv').config();  // Load environment variables from .env file
+
 const dbConfig = {
-    user: process.env.AZURE_SQL_USER || 'your-sql-admin-user',  // Replace with your Azure SQL username
-    password: process.env.AZURE_SQL_PASSWORD || 'your-sql-password',  // Replace with your Azure SQL password
-    server: 'tasmanclouddata.database.windows.net',  // Server name
-    database: 'runsheetdatabase',  // Use runsheetdatabase
+    user: process.env.AZURE_SQL_USER,
+    password: process.env.AZURE_SQL_PASSWORD,
+    server: process.env.AZURE_SQL_SERVER,
+    database: process.env.AZURE_SQL_DATABASE,
     options: {
-        encrypt: true,  // Required by Azure SQL
-        trustServerCertificate: false,  // Set this to false to avoid certificate issues
+        encrypt: true,
+        trustServerCertificate: false,
     }
 };
 
