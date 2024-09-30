@@ -1,4 +1,3 @@
-const sql = require('mssql');
 const { DefaultAzureCredential } = require('@azure/identity');
 
 // Get credentials using DefaultAzureCredential (Managed Identity, Environment Variables, etc.)
@@ -11,38 +10,22 @@ async function getToken() {
 }
 
 // SQL Configuration
-const dbConfig = {
-    server: 'tasmanclouddata.database.windows.net',
-    database: 'runsheetdatabase',
-    options: {
-        encrypt: true,  // Required for Azure SQL
-        trustServerCertificate: false,
-    },
-    authentication: {
-        type: 'azure-active-directory-access-token',
+async function getDbConfig() {
+    const token = await getToken();  // Get Azure AD token
+    return {
+        server: 'tasmanclouddata.database.windows.net',
+        database: 'runsheetdatabase',
         options: {
-            token: null,  // Token will be added here after it's fetched
+            encrypt: true,  // Required for Azure SQL
+            trustServerCertificate: false,
+        },
+        authentication: {
+            type: 'azure-active-directory-access-token',
+            options: {
+                token: token  // Token is added here
+            }
         }
-    }
-};
-
-// Function to connect to the database and run a test query
-async function connectToDatabase() {
-    try {
-        const token = await getToken();  // Get Azure AD token
-        dbConfig.authentication.options.token = token;
-
-        // Connect to Azure SQL Database
-        await sql.connect(dbConfig);
-        console.log('Connected to Azure SQL Database successfully!');
-
-        // Test query to check if the connection is working
-        const result = await sql.query('SELECT 1 AS test');
-        console.log('Test query result:', result.recordset);
-
-    } catch (err) {
-        console.error('Error connecting to Azure SQL Database:', err);
-    }
+    };
 }
 
-connectToDatabase();
+module.exports = { getDbConfig };  // Ensure this function is exported correctly
