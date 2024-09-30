@@ -1,20 +1,20 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const sql = require('mssql');  // Use mssql for Azure SQL
 
-// Azure SQL Database Configuration
+// Azure SQL Database Configuration from environment variables
 const dbConfig = {
-    user: process.env.AZURE_SQL_USER,  // Azure SQL username from environment variable
-    password: process.env.AZURE_SQL_PASSWORD,  // Azure SQL password from environment variable
-    server: process.env.AZURE_SQL_SERVER,  // Azure SQL server from environment variable
-    database: process.env.AZURE_SQL_DATABASE,  // Azure SQL database name
+    user: process.env.AZURE_SQL_USER,  
+    password: process.env.AZURE_SQL_PASSWORD,  
+    server: process.env.AZURE_SQL_SERVER,  
+    database: process.env.AZURE_SQL_DATABASE,  
     options: {
         encrypt: true,  // Azure requires encryption
-        trustServerCertificate: false,  // Disable self-signed cert validation
+        trustServerCertificate: false,  
     }
 };
-
 
 // Connect to Azure SQL Database
 sql.connect(dbConfig, (err) => {
@@ -29,8 +29,16 @@ sql.connect(dbConfig, (err) => {
 const app = express();
 
 // Middleware
-app.use(bodyParser.json());
+app.use(helmet());
 app.use(cors());
+app.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // Limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Basic route to check server status
 app.get('/', (req, res) => {
@@ -100,7 +108,7 @@ app.post('/save-job', (req, res) => {
         INSERT INTO dbo.Jobs (ClientName, TrailerType, JobCount)
         VALUES (@clientName, @trailerType, @jobCount)
     `;
-sindhu
+
     const request = new sql.Request();
     request.input('clientName', sql.VarChar, clientName);
     request.input('trailerType', sql.VarChar, trailerType);
