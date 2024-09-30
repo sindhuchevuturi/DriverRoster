@@ -3,7 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sql = require('mssql');  // Use mssql for Azure SQL
-require('dotenv').config();  // Load environment variables from .env
+require('dotenv').config();
 
 // Azure SQL Database Configuration
 const dbConfig = {
@@ -22,11 +22,6 @@ async function connectToDatabase() {
     try {
         await sql.connect(dbConfig);
         console.log('Connected to Azure SQL Database successfully!');
-
-        // Example query to test the connection
-        const result = await sql.query('SELECT TOP 10 * FROM Drivers');  // Example query
-        console.log('Query result:', result.recordset);
-
     } catch (err) {
         console.error('Database connection failed:', err);
         process.exit(1);  // Exit the process if the connection fails
@@ -49,8 +44,84 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'driver-roster-frontend', 'index.html'));
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
+// Route to save driver data
+app.post('/save-driver', async (req, res) => {
+    const { name, onLeave, hasMSIC, hasWhiteCard } = req.body;
+
+    const query = `
+        INSERT INTO dbo.Drivers (Name, OnLeave, HasMSIC, HasWhiteCard)
+        VALUES (@name, @onLeave, @hasMSIC, @hasWhiteCard)
+    `;
+
+    try {
+        const request = new sql.Request();
+        request.input('name', sql.VarChar, name);
+        request.input('onLeave', sql.Bit, onLeave);
+        request.input('hasMSIC', sql.Bit, hasMSIC);
+        request.input('hasWhiteCard', sql.Bit, hasWhiteCard);
+
+        await request.query(query);
+        res.status(201).send('Driver saved successfully');
+    } catch (err) {
+        console.error('Error saving driver:', err);
+        res.status(500).send('Error saving driver');
+    }
+});
+
+// Route to save roster data
+app.post('/save-roster', async (req, res) => {
+    const { gek, rego, trailerType, startTime, finishTime, service, wharfStatus, constructionSite, driver } = req.body;
+
+    const query = `
+        INSERT INTO dbo.Roster (GEK, REGO, TrailerType, StartTime, FinishTime, Service, WharfStatus, ConstructionSite, Driver)
+        VALUES (@gek, @rego, @trailerType, @startTime, @finishTime, @service, @wharfStatus, @constructionSite, @driver)
+    `;
+
+    try {
+        const request = new sql.Request();
+        request.input('gek', sql.VarChar, gek);
+        request.input('rego', sql.VarChar, rego);
+        request.input('trailerType', sql.VarChar, trailerType);
+        request.input('startTime', sql.Time, startTime);
+        request.input('finishTime', sql.Time, finishTime);
+        request.input('service', sql.VarChar, service);
+        request.input('wharfStatus', sql.Bit, wharfStatus);
+        request.input('constructionSite', sql.Bit, constructionSite);
+        request.input('driver', sql.VarChar, driver);
+
+        await request.query(query);
+        res.status(201).send('Roster saved successfully');
+    } catch (err) {
+        console.error('Error saving roster:', err);
+        res.status(500).send('Error saving roster');
+    }
+});
+
+// Route to save job data
+app.post('/save-job', async (req, res) => {
+    const { clientName, trailerType, jobCount } = req.body;
+
+    const query = `
+        INSERT INTO dbo.Jobs (ClientName, TrailerType, JobCount)
+        VALUES (@clientName, @trailerType, @jobCount)
+    `;
+
+    try {
+        const request = new sql.Request();
+        request.input('clientName', sql.VarChar, clientName);
+        request.input('trailerType', sql.VarChar, trailerType);
+        request.input('jobCount', sql.Int, jobCount);
+
+        await request.query(query);
+        res.status(201).send('Job saved successfully');
+    } catch (err) {
+        console.error('Error saving job:', err);
+        res.status(500).send('Error saving job');
+    }
+});
+
+// Start the server on port 5001
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Driver Roster Backend is running on http://localhost:${PORT}/`);
 });
