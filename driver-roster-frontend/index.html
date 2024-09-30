@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Roster with Dynamic Inputs and Excel Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .edit-btn {
+             background-color: #ff9900; /* Different color for edit mode */
+                color: white;
+            }
+
+        .confirm-btn {
+            background-color: #007bff; /* Confirm button style */
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input, select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        /* Navy blue button style */
+        .download-btn, .add-btn {
+            margin: 20px 0;
+            padding: 10px 15px;
+            background-color: rgb(6, 6, 201); /* Navy blue background */
+            color: white;font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .download-btn:hover, .add-btn:hover {
+            background-color: #000080; /* Darker navy blue on hover */
+        }
+
+        .confirm-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .confirm-btn:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+        .inactive-row {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .confirmed-row {
+            background-color: #f0f0f0;
+            pointer-events: none;
+        }
+        .logo {
+         width: 300px; /* Increase the width to make the logo bigger */
+         height: auto; /* Maintain aspect ratio */
+        }
+    </style>
+</head>
+<body>
+
+
+<header>
+    <h1>Driver Roster for <span id="currentDate"></span></h1>
+    <img src="https://i.imgur.com/q4k13UQ.jpg" alt="Company Logo" class="logo">
+</header>
+
+
+<button class="download-btn" onclick="downloadExcel()">Download</button>
+
+
+<!-- Main Roster Table -->
+<table id="rosterTable">
+    <h2> Roster Table</h2>
+    <thead>
+        <tr>
+            <th>GEK #</th>
+            <th>REGO</th>
+            <th>Trailer Type</th> <!-- Changed Type to Trailer Type -->
+            <th>Start Time</th>
+            <th>Finish Time</th>
+            <th>Service</th>
+            <th>Wharf Status</th> <!-- Moved Wharf Status next to Service -->
+            <th>Construction Site</th>
+            <th>Driver</th>
+            <th>Confirm</th>
+        </tr>
+    </thead>
+    <tbody id="rosterTableBody">
+        <!-- Initial row will be generated here -->
+    </tbody>
+</table>
+
+
+<!-- Drivers Tab -->
+<h2>Drivers List</h2>
+<table id="driversTable">
+    <thead>
+        <tr>
+            <th>Driver Name</th>
+            <th>On Leave</th>
+            <th>Has MSIC</th>
+            <th>Has White Card</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>(HC) Dean Piggot</td>
+            <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
+        </tr>
+        <tr>
+            <td>(MC) Jagdip Singh</td>
+            <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+            <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
+        </tr>
+        <!-- Add more drivers -->
+    </tbody>
+</table>
+
+<!-- Add New Driver -->
+<input type="text" id="newDriverName" placeholder="Add New Driver Name">
+<button class="add-btn" onclick="addDriver()">Add Driver</button>
+
+<!-- Vehicles Tab -->
+<h2>Vehicles List</h2>
+<table id="vehiclesTable">
+    <thead>
+        <tr>
+            <th>REGO</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>XW06PI</td>
+        </tr>
+        <tr>
+            <td>XW48PI</td>
+        </tr>
+        <!-- Add more vehicles -->
+    </tbody>
+</table>
+
+<!-- Add New Rego -->
+<input type="text" id="newRego" placeholder="Add New Rego">
+<button class="add-btn" onclick="addRego()">Add Rego</button>
+
+<!-- Jobs Tab -->
+<h2>Jobs List</h2>
+<table id="jobsTable">
+    <thead>
+        <tr>
+            <th>Client Name</th>
+            <th>Trailer Type</th>
+            <th># of jobs</th>
+            <th>Confirm</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Sunrice</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="number" min="1" class="rowCount" placeholder="Enter number of rows"></td> <!-- Only numbers allowed -->
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
+        <tr>
+            <td>Agripak</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="number" min="1" class="rowCount" placeholder="Enter number of rows"></td> <!-- Only numbers allowed -->
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
+        <tr>
+            <td>CHS BB</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+
+                </select>
+            </td>
+            <td><input type="number" min="1" class="rowCount" placeholder="Enter number of rows"></td> <!-- Only numbers allowed -->
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
+        <tr>
+            <td>DPW</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="number" min="1" class="rowCount" placeholder="Enter number of rows"></td> <!-- Only numbers allowed -->
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
+
+        <td>NE Link</td>
+            <td>
+                <select>
+                    <option value="S">S</option>
+                    <option value="SDL">SDL</option>
+                    <option value="RT">RT</option>
+                    <option value="BDBL">BDBL</option>
+                </select>
+            </td>
+            <td><input type="number" min="1" class="rowCount" placeholder="Enter number of rows"></td> <!-- Only numbers allowed -->
+            <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- Add New Job -->
+<input type="text" id="newJob" placeholder="Add New Job">
+<input type="number" id="newJobCount" placeholder="Number of Jobs" min="1">
+<button class="add-btn" onclick="addJob()">Add Job</button>
+
+<script>
+    let currentRow = 1;
+    let confirmedRowsCount = 0;
+    let confirmedJobs = [];
+   
+    document.getElementById('rosterTableBody').addEventListener('change', function(event) {
+        if (event.target.matches('select')) {
+            const rowId = event.target.closest('tr').rowIndex; // Get the row index
+            updateDriverList(rowId); // Call function to update driver list
+        }
+    });
+
+    // Event listener for MSIC, White Card, and On Leave checkboxes in Drivers Table
+    document.getElementById('driversTable').addEventListener('change', function(event) {
+        if (event.target.matches('.onLeave, .hasMSIC, .hasWhiteCard')) {
+            refreshDriverDropdowns(); // Call function to refresh driver lists across all rows
+        }
+    });
+    // Function to get current date based on Melbourne time
+    function getMelbourneDate() {
+        const now = new Date();
+        const melbourneTime = now.toLocaleString('en-AU', {
+            timeZone: 'Australia/Melbourne',
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        document.getElementById("currentDate").innerText = melbourneTime;
+    }
+   
+    function deleteRow(rowId) {
+    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    currentRowElement.remove(); // Remove the selected row from the table
+
+    // Optionally, call reassignRowIds() here if you want to renumber rows after deletion
+    reassignRowIds();  // Reassign row IDs and element IDs after deletion (optional)
+}
+
+function reassignRowIds() {
+    const rows = document.querySelectorAll('#rosterTableBody tr');
+    rows.forEach((row, index) => {
+        const newId = index + 1; // Create new rowId based on index
+        row.id = `row-${newId}`; // Update the row's ID
+        // Update the IDs of all elements within the row
+        row.querySelector('input[type="text"]').id = `gek${newId}`;
+        row.querySelector('select[id^="rego"]').id = `rego${newId}`;
+        row.querySelector('select[id^="type"]').id = `type${newId}`;
+        row.querySelector('input[type="time"]').id = `startTime${newId}`;
+        row.querySelector('input[type="time"]').id = `finishTime${newId}`;
+        row.querySelector('select[id^="service"]').id = `service${newId}`;
+        row.querySelector('select[id^="wharfLocation"]').id = `wharfLocation${newId}`;
+        row.querySelector('select[id^="constructionSite"]').id = `constructionSite${newId}`;
+        row.querySelector('select[id^="driver"]').id = `driver${newId}`;
+        row.querySelector('.confirm-btn').setAttribute('onclick', `confirmRow(${newId})`);
+        row.querySelector('.delete-btn').setAttribute('onclick', `deleteRow(${newId})`);
+    });
+}
+function addRow() {
+    const tableBody = document.getElementById('rosterTableBody');
+    const rowId = currentRow; // Use the current row for unique IDs
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><input type="text" id="gek${rowId}" placeholder="Enter GEK#"></td>
+        <td><select id="rego${rowId}"></select></td>
+        <td>
+            <select id="type${rowId}"></select> <!-- This is the Trailer Type dropdown -->
+        </td>
+        <td><input type="time" id="startTime${rowId}"></td>
+        <td><input type="time" id="finishTime${rowId}"></td>
+        <td><select id="service${rowId}"></select> <!-- This is the Client Name (Service) dropdown -->
+        </td>
+        <td>
+            <select id="wharfLocation${rowId}" onchange="updateDriverList(${rowId})">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option> <!-- Wharf Status -->
+            </select>
+        </td>
+        <td>
+            <select id="constructionSite${rowId}" onchange="updateDriverList(${rowId})">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option> <!-- Construction Site -->
+            </select>
+        </td>
+        <td><select id="driver${rowId}"></select></td>
+        <td>
+            <button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button>
+            <button class="delete-btn" onclick="deleteRow(${rowId})">Delete</button>
+        </td>
+    `;
+    tableBody.appendChild(row);
+    populateDropDowns(rowId);  // Populate dropdowns for this new row
+}
+
+function updateDriverList(rowId) {
+        const wharfStatus = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="wharfLocation"]`).value;
+        const constructionSiteStatus = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="constructionSite"]`).value;
+
+        // Convert string values to boolean (Yes -> true, No -> false)
+        const wharfStatusIsYes = (wharfStatus === "Yes");
+        const constructionSiteIsYes = (constructionSiteStatus === "Yes");
+
+        // Call the function to update the driver list based on Wharf and Construction Site status
+        populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes);
+    }
+
+function confirmJob(button) {
+    const row = button.closest('tr'); // Get the row from the jobs list
+    const clientName = row.cells[0].textContent; // Get the client name
+    const selectedTrailerType = row.cells[1].querySelector('select').value; // Get the trailer type
+    const numberOfRows = parseInt(row.cells[2].querySelector('.rowCount').value); // Get the number of rows
+
+    // Validate the number of rows
+    if (isNaN(numberOfRows) || numberOfRows <= 0) {
+        alert("Please enter a valid number of rows.");
+        return;
+    }
+
+    const requiresWhiteCard = clientName.toLowerCase().includes("construction"); // Example logic for construction jobs
+    for (let i = 0; i < numberOfRows; i++) {
+        currentRow++;  // Increment row counter
+        addRow();  // Add a new row to the roster table
+
+        // Get the current row in the roster table
+        const currentTableRow = document.querySelector(`#rosterTableBody tr:nth-child(${currentRow})`);
+
+        // Update the Client Name (Service column) and Trailer Type in the current row
+        const clientCell = currentTableRow.querySelector(`#service${currentRow}`);
+        const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`);
+
+        // Update the Client Name and Trailer Type in the main roster table
+        clientCell.innerHTML = `<option>${clientName}</option>`;
+        trailerTypeSelect.innerHTML = ''; // Clear previous options
+        const trailerTypeOption = document.createElement('option');
+        trailerTypeOption.value = selectedTrailerType;
+        trailerTypeOption.textContent = selectedTrailerType;
+        trailerTypeSelect.appendChild(trailerTypeOption);
+
+        if (requiresWhiteCard) {
+            // Ensure driver has White Card for construction site jobs
+            const driverSelect = currentTableRow.querySelector(`#driver${currentRow}`);
+            const hasWhiteCard = driverSelect.options[driverSelect.selectedIndex]?.dataset.hasWhiteCard === 'true';
+
+            if (!hasWhiteCard) {
+                alert("Selected driver does not have a White Card. Please choose a qualified driver.");
+                return; // Prevent confirmation if driver is not qualified
+            }
+        }
+    }
+
+    // Disable the confirm button and inputs in the jobs list to prevent re-confirmation
+    button.disabled = true;
+    row.cells[1].querySelector('select').disabled = true;
+    row.cells[2].querySelector('input').disabled = true;
+}
+
+function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) {
+        const drivers = document.querySelectorAll('#driversTable tbody tr'); // Get all drivers from the drivers table
+        const driverSelect = document.querySelector(`#rosterTableBody tr:nth-child(${rowId}) select[id^="driver"]`); // Driver dropdown in the roster table
+        driverSelect.innerHTML = ''; // Clear current options in the driver dropdown
+
+        // Loop through all drivers in the drivers table
+        drivers.forEach(function(row) {
+            const driverName = row.cells[0].textContent; // Driver name
+            const onLeave = row.cells[1].querySelector('.onLeave').checked; // Is the driver on leave?
+            const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked; // Does the driver have MSIC?
+            const hasWhiteCard = row.cells[3].querySelector('.hasWhiteCard').checked; // Does the driver have a White Card?
+
+            // Ensure the driver is not on leave
+            if (!onLeave) {
+                if (wharfStatusIsYes && constructionSiteIsYes) {
+                    // Both Wharf Status and Construction Site are Yes: Driver must have both MSIC and White Card
+                    if (hasMSIC && hasWhiteCard) {
+                        const option = document.createElement('option');
+                        option.value = driverName;
+                        option.textContent = driverName;
+                        driverSelect.appendChild(option);
+                    }
+                } else if (wharfStatusIsYes) {
+                    // Only Wharf Status is Yes: Driver must have MSIC
+                    if (hasMSIC) {
+                        const option = document.createElement('option');
+                        option.value = driverName;
+                        option.textContent = driverName;
+                        driverSelect.appendChild(option);
+                    }
+                } else if (constructionSiteIsYes) {
+                    // Only Construction Site is Yes: Driver must have White Card
+                    if (hasWhiteCard) {
+                        const option = document.createElement('option');
+                        option.value = driverName;
+                        option.textContent = driverName;
+                        driverSelect.appendChild(option);
+                    }
+                } else {
+                    // Neither Wharf Status nor Construction Site is Yes: Show all drivers who are not on leave
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
+            }
+        });
+
+        // If no drivers are available, show a message
+        if (driverSelect.length === 0) {
+            const noDriverOption = document.createElement('option');
+            noDriverOption.value = '';
+            noDriverOption.textContent = 'No drivers available';
+            driverSelect.appendChild(noDriverOption);
+        }
+    }
+
+    
+function populateDropDowns(rowId) {
+    const drivers = document.querySelectorAll('#driversTable tbody tr');
+    const vehicles = document.querySelectorAll('#vehiclesTable tbody tr');
+    const driverSelect = document.getElementById(`driver${rowId}`);
+    const regoSelect = document.getElementById(`rego${rowId}`);
+    const wharfLocationSelect = document.getElementById(`wharfLocation${rowId}`); // Wharf Location (Restricted)
+    const wharfRestricted = wharfLocationSelect.value === "Yes"; // Check if wharf location is restricted
+
+    regoSelect.innerHTML = ''; // Clear vehicle options
+    driverSelect.innerHTML = ''; // Clear driver options
+
+    // Populate vehicles dropdown
+    vehicles.forEach(function (row) {
+        const option = document.createElement('option');
+        option.value = row.cells[0].textContent;
+        option.textContent = row.cells[0].textContent;
+        regoSelect.appendChild(option);
+    });
+
+    // Populate drivers dropdown
+    drivers.forEach(function (row) {
+        const driverName = row.cells[0].textContent;
+        const onLeave = row.cells[1].querySelector('.onLeave').checked;
+        const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
+
+        if (!onLeave) {
+            if (wharfRestricted) {
+                // Show only drivers with MSIC for restricted wharf jobs
+                if (hasMSIC) {
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    driverSelect.appendChild(option);
+                }
+            } else {
+                // For non-wharf jobs, add all drivers who are not on leave
+                const option = document.createElement('option');
+                option.value = driverName;
+                option.textContent = driverName;
+                driverSelect.appendChild(option);
+            }
+        }
+    });
+}
+function refreshDriverDropdowns() {
+        const rows = document.querySelectorAll('#rosterTableBody tr');
+        rows.forEach((row, index) => {
+            const rowId = index + 1; // Get row ID
+            updateDriverList(rowId);  // Update driver list for each row
+        });
+    }
+function confirmRow(rowId) {
+    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    const confirmButton = currentRowElement.querySelector('.confirm-btn');
+
+    // Toggle between Confirm and Edit
+    if (confirmButton.textContent === "Confirm") {
+        // Disable all inputs and dropdowns
+        currentRowElement.querySelectorAll('input, select').forEach(function(element) {
+            element.disabled = true;
+        });
+
+        // Change button to Edit
+        confirmButton.textContent = "Edit";
+        confirmButton.classList.add('edit-btn');
+
+        // Add a new row after confirmation
+       // currentRow++;  // Increment row counter
+       // addRow();  // Add a new row
+    } else {
+        // Enable all inputs and dropdowns to make row editable again
+        currentRowElement.querySelectorAll('input, select').forEach(function(element) {
+            element.disabled = false;
+        });
+
+        // Change button back to Confirm
+        confirmButton.textContent = "Confirm";
+        confirmButton.classList.remove('edit-btn');
+    }
+}
+
+    // Function to add a new driver dynamically
+    function addDriver() {
+        const newDriverName = document.getElementById('newDriverName').value.trim();
+        if (newDriverName !== "") {
+            const driversTable = document.getElementById('driversTable').querySelector('tbody');
+            const newRow = driversTable.insertRow();
+
+            newRow.innerHTML = `
+                <td>${newDriverName}</td>
+                <td><input type="checkbox" class="onLeave" onchange="refreshDriverDropdowns()"></td>
+                <td><input type="checkbox" class="hasMSIC" checked onchange="refreshDriverDropdowns()"></td>
+                <td><input type="checkbox" class="hasWhiteCard" checked onchange="refreshDriverDropdowns()"></td>
+
+            `;
+
+            // Clear input and refresh dropdowns
+            document.getElementById('newDriverName').value = '';
+            populateDropDowns(currentRow);
+        }
+    }
+
+    // Function to add a new vehicle (rego) dynamically
+    function addRego() {
+        const newRego = document.getElementById('newRego').value.trim();
+        if (newRego !== "") {
+            const vehiclesTable = document.getElementById('vehiclesTable').querySelector('tbody');
+            const newRow = vehiclesTable.insertRow();
+            newRow.innerHTML = `<td>${newRego}</td>`;
+
+            // Clear input and refresh dropdowns
+            document.getElementById('newRego').value = '';
+            populateDropDowns(currentRow);
+        }
+    }
+
+  // Function to add a new job dynamically
+function addJob() {
+    const newJob = document.getElementById('newJob').value.trim();
+    const newJobCount = parseInt(document.getElementById('newJobCount').value.trim()); // Get the number of jobs
+    
+    // Validate job name and job count
+    if (newJob === "") {
+        alert("Please enter a job name.");
+        return;
+    }
+    
+    if (isNaN(newJobCount) || newJobCount <= 0) {
+        alert("Please enter a valid number of jobs.");
+        return;
+    }
+
+    const jobsTable = document.getElementById('jobsTable').querySelector('tbody');
+    const newRow = jobsTable.insertRow();
+    
+    newRow.innerHTML = `
+        <td>${newJob}</td>
+        <td>
+            <select>
+                <option value="S">S</option>
+                <option value="SDL">SDL</option>
+                <option value="RT">RT</option>
+                <option value="BDBL">BDBL</option>
+            </select>
+        </td>
+        <td><input type="number" class="rowCount" value="${newJobCount}" min="1" disabled></td> <!-- Add the number of jobs -->
+        <td><button class="confirm-btn" onclick="confirmJob(this)">Confirm</button></td>
+    `;
+
+    // Clear input fields after adding the job
+    document.getElementById('newJob').value = '';
+    document.getElementById('newJobCount').value = '';
+}
+
+function saveRoster(data) {
+    fetch('http://localhost:5000/save-roster', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Roster saved successfully:', data);
+    })
+    .catch((error) => {
+        console.error('Error saving roster:', error);
+    });
+}
+
+function saveDriver(data) {
+    fetch('http://localhost:5000/save-driver', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Driver saved successfully:', data);
+    })
+    .catch((error) => {
+        console.error('Error saving driver:', error);
+    });
+}
+function collectRosterData() {
+    const rosterData = {
+        gek: document.getElementById('gek1').value,
+        rego: document.getElementById('rego1').value,
+        trailerType: document.getElementById('type1').value,
+        startTime: document.getElementById('startTime1').value,
+        finishTime: document.getElementById('finishTime1').value,
+        service: document.getElementById('service1').value,
+        wharfStatus: document.getElementById('wharfLocation1').value,
+        constructionSite: document.getElementById('constructionSite1').value,
+        driver: document.getElementById('driver1').value
+    };
+
+    saveRoster(rosterData);
+}
+
+    // Function to download the entire roster to an Excel file
+    function downloadExcel() {
+        const workbook = XLSX.utils.book_new();
+
+        // Collect data from the roster table, drivers table, vehicles table, and jobs table
+        const rosterData = tableToArray(document.getElementById('rosterTable'));
+        const driversData = tableToArray(document.getElementById('driversTable'));
+        const vehiclesData = tableToArray(document.getElementById('vehiclesTable'));
+        const jobsData = tableToArray(document.getElementById('jobsTable'));
+
+        // Create worksheets for each section
+        const rosterSheet = XLSX.utils.aoa_to_sheet(rosterData);
+        const driversSheet = XLSX.utils.aoa_to_sheet(driversData);
+        const vehiclesSheet = XLSX.utils.aoa_to_sheet(vehiclesData);
+        const jobsSheet = XLSX.utils.aoa_to_sheet(jobsData);
+
+        // Add worksheets to the workbook
+        XLSX.utils.book_append_sheet(workbook, rosterSheet, 'Roster');
+        XLSX.utils.book_append_sheet(workbook, driversSheet, 'Drivers');
+        XLSX.utils.book_append_sheet(workbook, vehiclesSheet, 'Vehicles');
+        XLSX.utils.book_append_sheet(workbook, jobsSheet, 'Jobs');
+
+        // Generate file name based on the date
+        const dateString = new Date().toLocaleDateString('en-AU').replace(/\//g, '_');
+        const fileName = `Driver_Roster_${dateString}.xlsx`;
+
+        // Download the Excel file
+        XLSX.writeFile(workbook, fileName);
+    }
+
+    // Utility function to convert table to a 2D array for Excel export
+    function tableToArray(table) {
+        const data = [];
+        table.querySelectorAll('tr').forEach(row => {
+            const rowData = [];
+            row.querySelectorAll('th, td').forEach(cell => {
+                const input = cell.querySelector('input, select');
+                rowData.push(input ? (input.value || cell.textContent) : cell.textContent);
+            });
+            data.push(rowData);
+        });
+        return data;
+    }
+
+    // Initial setup: add the first row, populate dropdowns, and set the current date
+    window.onload = function () {
+        addRow(); // Add the first row
+        getMelbourneDate(); // Set the current date in the header
+    };
+</script>
+
+</body>
+</html>
