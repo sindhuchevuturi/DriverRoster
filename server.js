@@ -45,11 +45,12 @@ app.get('/', (req, res) => {
 });
 
 // Route to save driver data
+// Route to save driver data
 app.post('/save-driver', async (req, res) => {
     const { name, onLeave, hasMSIC, hasWhiteCard } = req.body;
 
     const query = `
-        INSERT INTO dbo.Drivers (Name, OnLeave, HasMSIC, HasWhiteCard)
+        INSERT INTO tasman_Drivers (Name, OnLeave, HasMSIC, HasWhiteCard)
         VALUES (@name, @onLeave, @hasMSIC, @hasWhiteCard)
     `;
 
@@ -67,6 +68,7 @@ app.post('/save-driver', async (req, res) => {
         res.status(500).send('Error saving driver');
     }
 });
+
 
 // Route to save roster data
 app.post('/save-roster', async (req, res) => {
