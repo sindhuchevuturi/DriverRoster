@@ -1,14 +1,42 @@
-require('dotenv').config();  // Load environment variables from .env file
+const sql = require('mssql');
+const { DefaultAzureCredential } = require('@azure/identity');
 
+// Get credentials using DefaultAzureCredential (Managed Identity, Environment Variables, etc.)
+const credential = new DefaultAzureCredential();
+
+async function getToken() {
+    const tokenResponse = await credential.getToken('https://database.windows.net/.default');
+    return tokenResponse.token;
+}
+
+// SQL Configuration
 const dbConfig = {
-    user: process.env.AZURE_SQL_USER,
-    password: process.env.AZURE_SQL_PASSWORD,
-    server: process.env.AZURE_SQL_SERVER,
-    database: process.env.AZURE_SQL_DATABASE,
+    server: 'tasmanclouddata.database.windows.net',
+    database: 'runsheetdatabase',
     options: {
-        encrypt: true,
+        encrypt: true, // Required for Azure SQL
         trustServerCertificate: false,
+    },
+    authentication: {
+        type: 'azure-active-directory-access-token',
+        options: {
+            token: null, // Token will be added here after it's fetched
+        }
     }
 };
 
-module.exports = dbConfig;
+// Connect to the database with AAD Authentication
+async function connectToDatabase() {
+    try {
+        const token = await getToken();
+        dbConfig.authentication.options.token = token;
+
+        // Connect to Azure SQL Database
+        await sql.connect(dbConfig);
+        console.log('Connected to Azure SQL Database successfully!');
+    } catch (err) {
+        console.error('Error connecting to Azure SQL Database:', err);
+    }
+}
+
+module.exports = { connectToDatabase };
