@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const sql = require('mssql');  // Declared once here
+const sql = require('mssql');  // Declared only once
 const { getDbConfig } = require('./dbConfig');  // Import the configuration
 
 // Initialize the Express app
