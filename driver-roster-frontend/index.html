@@ -272,11 +272,12 @@
     let confirmedJobs = [];
    
     document.getElementById('rosterTableBody').addEventListener('change', function(event) {
-        if (event.target.matches('select')) {
-            const rowId = event.target.closest('tr').rowIndex; // Get the row index
-            updateDriverList(rowId); // Call function to update driver list
-        }
-    });
+    if (event.target.matches('select')) {
+        const rowElement = event.target.closest('tr');
+        const rowId = rowElement.getAttribute('data-row-id'); // Get the rowId from data attribute
+        updateDriverList(rowId); // Call function to update driver list
+    }
+})
 
     // Event listener for MSIC, White Card, and On Leave checkboxes in Drivers Table
     document.getElementById('driversTable').addEventListener('change', function(event) {
@@ -538,8 +539,8 @@ function populateDropDowns(rowId) {
 
 function refreshDriverDropdowns() {
     const rows = document.querySelectorAll('#rosterTableBody tr');
-    rows.forEach((row, index) => {
-        const rowId = index + 1;
+    rows.forEach((row) => {
+        const rowId = row.getAttribute('data-row-id'); // Get the rowId from the data attribute
         updateDriverList(rowId); // Update the driver list for each row dynamically
         $(`#driver${rowId}`).select2();  
     });
