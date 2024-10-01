@@ -267,7 +267,7 @@
 <button class="add-btn" onclick="addJob()">Add Job</button>
 
 <script>
-    let currentRow = 1;
+    let nextRowId = 1;
     let confirmedRowsCount = 0;
     let confirmedJobs = [];
    
@@ -284,6 +284,24 @@
             refreshDriverDropdowns(); // Call function to refresh driver lists across all rows
         }
     });
+    function refreshJobListState() {
+    const jobsTable = document.getElementById('jobsTable').querySelectorAll('tr');
+
+    jobsTable.forEach((row) => {
+        const clientName = row.cells[0].textContent;
+        const confirmedRows = Array.from(document.querySelectorAll('#rosterTableBody tr'))
+            .filter(rosterRow => rosterRow.querySelector(`#service${rosterRow.rowIndex}`).value === clientName);
+
+        // If no rows are left in the roster for this job, re-enable the Confirm button
+        if (confirmedRows.length === 0) {
+            const confirmButton = row.querySelector('.confirm-btn');
+            confirmButton.disabled = false; // Re-enable the button
+            confirmButton.style.backgroundColor = '#007bff'; // Restore original button color
+            confirmButton.style.cursor = 'pointer'; // Restore pointer cursor
+        }
+    });
+}
+
     // Function to get current date based on Melbourne time
     function getMelbourneDate() {
         const now = new Date();
@@ -296,10 +314,15 @@
    
     function deleteRow(rowId) {
     const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
-    currentRowElement.remove(); // Remove the selected row from the table
+    
+    // Remove the selected row from the table
+    currentRowElement.remove(); 
 
-    // Optionally, call reassignRowIds() here if you want to renumber rows after deletion
-    reassignRowIds();  // Reassign row IDs and element IDs after deletion (optional)
+    // Reassign row IDs and element IDs after deletion (optional but recommended for consistency)
+    reassignRowIds();
+
+    // Optionally, re-enable the jobs list confirm button if rows corresponding to a job were deleted
+    refreshJobListState(); // Refresh jobs list state after deletion
 }
 
 function reassignRowIds() {
@@ -321,11 +344,15 @@ function reassignRowIds() {
         row.querySelector('.delete-btn').setAttribute('onclick', `deleteRow(${newId})`);
     });
 }
+
 function addRow() {
     const tableBody = document.getElementById('rosterTableBody');
-    const rowId = currentRow; // Use the current row for unique IDs
+    const rowId = nextRowId++; // Use the current row for unique IDs
 
     const row = document.createElement('tr');
+    row.setAttribute('data-row-id', rowId); // Store the rowId as a data attribute
+
+
     row.innerHTML = `
         <td><input type="text" id="gek${rowId}" placeholder="Enter GEK#"></td>
         <td><select id="rego${rowId}"></select></td>
@@ -355,7 +382,9 @@ function addRow() {
         </td>
     `;
     tableBody.appendChild(row);
-    populateDropDowns(rowId);  // Populate dropdowns for this new row
+    populateDropDowns(rowId);  
+    
+    return row;// Populate dropdowns for this new row
 }
 
 function updateDriverList(rowId) {
@@ -364,20 +393,18 @@ function updateDriverList(rowId) {
 
     const wharfStatusIsYes = (wharfStatus === "Yes");
     const constructionSiteIsYes = (constructionSiteStatus === "Yes");
-  
 
-    // Call the function to update the driver list based on criteria
+    // Update the driver dropdown based on the criteria
     populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes);
-   
 }
 
 
 
 function confirmJob(button) {
-    const row = button.closest('tr'); // Get the row from the jobs list
-    const clientName = row.cells[0].textContent; // Get the client name
-    const selectedTrailerType = row.cells[1].querySelector('select').value; // Get the trailer type
-    const numberOfRows = parseInt(row.cells[2].querySelector('.rowCount').value); // Get the number of rows
+    const row = button.closest('tr');
+    const clientName = row.cells[0].textContent;
+    const selectedTrailerType = row.cells[1].querySelector('select').value;
+    const numberOfRows = parseInt(row.cells[2].querySelector('.rowCount').value);
 
     // Validate the number of rows
     if (isNaN(numberOfRows) || numberOfRows <= 0) {
@@ -385,43 +412,32 @@ function confirmJob(button) {
         return;
     }
 
-    const requiresWhiteCard = clientName.toLowerCase().includes("construction"); // Example logic for construction jobs
     for (let i = 0; i < numberOfRows; i++) {
-        currentRow++;  // Increment row counter
-        addRow();  // Add a new row to the roster table
+        const newRow = addRow(); // Add a new row and get the row element
+        const rowId = newRow.getAttribute('data-row-id'); // Get the unique row ID
 
-        // Get the current row in the roster table
-        const currentTableRow = document.querySelector(`#rosterTableBody tr:nth-child(${currentRow})`);
+        // Update the Client Name (Service) and Trailer Type in the new row
+        const clientCell = document.getElementById(`service${rowId}`);
+        const trailerTypeSelect = document.getElementById(`type${rowId}`);
 
-        // Update the Client Name (Service column) and Trailer Type in the current row
-        const clientCell = currentTableRow.querySelector(`#service${currentRow}`);
-        const trailerTypeSelect = currentTableRow.querySelector(`#type${currentRow}`);
-
-        // Update the Client Name and Trailer Type in the main roster table
         clientCell.innerHTML = `<option>${clientName}</option>`;
-        trailerTypeSelect.innerHTML = ''; // Clear previous options
+        trailerTypeSelect.innerHTML = '';
         const trailerTypeOption = document.createElement('option');
         trailerTypeOption.value = selectedTrailerType;
         trailerTypeOption.textContent = selectedTrailerType;
         trailerTypeSelect.appendChild(trailerTypeOption);
-
-        if (requiresWhiteCard) {
-            // Ensure driver has White Card for construction site jobs
-            const driverSelect = currentTableRow.querySelector(`#driver${currentRow}`);
-            const hasWhiteCard = driverSelect.options[driverSelect.selectedIndex]?.dataset.hasWhiteCard === 'true';
-
-            if (!hasWhiteCard) {
-                alert("Selected driver does not have a White Card. Please choose a qualified driver.");
-                return; // Prevent confirmation if driver is not qualified
-            }
-        }
     }
 
-    // Disable the confirm button and inputs in the jobs list to prevent re-confirmation
+    // Disable the confirm button and inputs in the jobs list
     button.disabled = true;
     row.cells[1].querySelector('select').disabled = true;
     row.cells[2].querySelector('input').disabled = true;
+
+    // Change the button style
+    button.style.backgroundColor = 'grey';
+    button.style.cursor = 'not-allowed';
 }
+
 
 function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) {
     const drivers = document.querySelectorAll('#driversTable tbody tr');
@@ -534,9 +550,8 @@ document.querySelectorAll('.onLeave, .hasMSIC, .hasWhiteCard').forEach(checkbox 
     checkbox.addEventListener('change', refreshDriverDropdowns);
 });
 
-
 function confirmRow(rowId) {
-    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    const currentRowElement = document.querySelector(`#rosterTableBody tr[data-row-id="${rowId}"]`);
     const confirmButton = currentRowElement.querySelector('.confirm-btn');
     const driverSelect = document.getElementById(`driver${rowId}`).value;
 
@@ -545,6 +560,7 @@ function confirmRow(rowId) {
         alert('Please select a driver before confirming.');
         return;
     }
+
     // Toggle between Confirm and Edit
     if (confirmButton.textContent === "Confirm") {
         // Disable all inputs and dropdowns
@@ -555,10 +571,6 @@ function confirmRow(rowId) {
         // Change button to Edit
         confirmButton.textContent = "Edit";
         confirmButton.classList.add('edit-btn');
-
-        // Add a new row after confirmation
-       // currentRow++;  // Increment row counter
-       // addRow();  // Add a new row
     } else {
         // Enable all inputs and dropdowns to make row editable again
         currentRowElement.querySelectorAll('input, select').forEach(function(element) {
@@ -570,6 +582,7 @@ function confirmRow(rowId) {
         confirmButton.classList.remove('edit-btn');
     }
 }
+
 
     // Function to add a new driver dynamically
     function addDriver() {
