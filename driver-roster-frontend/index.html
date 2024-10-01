@@ -85,6 +85,10 @@
          width: 300px; /* Increase the width to make the logo bigger */
          height: auto; /* Maintain aspect ratio */
         }
+        #rosterTable tbody tr:first-child {
+    display: none;
+}
+
     </style>
 </head>
 <body>
@@ -439,20 +443,31 @@ function confirmJob(button) {
     button.style.cursor = 'not-allowed';
 }
 
-
 function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) {
     const drivers = document.querySelectorAll('#driversTable tbody tr');
     const driverSelect = document.getElementById(`driver${rowId}`);
+    const currentValue = driverSelect.value; // Store current selected value
     driverSelect.innerHTML = ''; // Clear existing options
 
     let driverAdded = false; // Track if any driver is added
+    let hasCurrentValue = false; // Track if current value is still valid
 
     // Loop through drivers and apply filters based on conditions
     drivers.forEach(function (row) {
-        const driverName = row.cells[0].textContent;
-        const onLeave = row.cells[1].querySelector('.onLeave').checked;
-        const hasMSIC = row.cells[2].querySelector('.hasMSIC').checked;
-        const hasWhiteCard = row.cells[3].querySelector('.hasWhiteCard').checked;
+        const cells = row.querySelectorAll('td'); // Use querySelectorAll to get cells
+        if (cells.length < 4) return; // Skip if not enough cells
+
+        const driverName = cells[0].textContent.trim();
+        const onLeaveCheckbox = cells[1].querySelector('.onLeave');
+        const hasMSICCheckbox = cells[2].querySelector('.hasMSIC');
+        const hasWhiteCardCheckbox = cells[3].querySelector('.hasWhiteCard');
+
+        const onLeave = onLeaveCheckbox ? onLeaveCheckbox.checked : false;
+        const hasMSIC = hasMSICCheckbox ? hasMSICCheckbox.checked : false;
+        const hasWhiteCard = hasWhiteCardCheckbox ? hasWhiteCardCheckbox.checked : false;
+
+        // Debugging statements (you can remove these if not needed)
+        // console.log(`Driver: ${driverName}, OnLeave: ${onLeave}, HasMSIC: ${hasMSIC}, HasWhiteCard: ${hasWhiteCard}`);
 
         // Check if the driver meets the criteria and is not on leave
         if (!onLeave) {
@@ -468,11 +483,18 @@ function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) 
                 addDriver = true; // No restrictions, allow all drivers not on leave
             }
 
+            // Debugging statement
+            // console.log(`AddDriver for ${driverName}: ${addDriver}`);
+
             // If the driver meets the conditions, add them to the dropdown
             if (addDriver) {
                 const option = document.createElement('option');
                 option.value = driverName;
                 option.textContent = driverName;
+                if (driverName === currentValue) {
+                    hasCurrentValue = true;
+                    option.selected = true; // Keep current selection if still valid
+                }
                 driverSelect.appendChild(option);
                 driverAdded = true;
             }
@@ -486,7 +508,21 @@ function populateDriverDropdown(rowId, wharfStatusIsYes, constructionSiteIsYes) 
         noDriverOption.textContent = 'No drivers available';
         driverSelect.appendChild(noDriverOption);
     }
+
+    // If current value is no longer valid, reset the select value
+    if (!hasCurrentValue) {
+        driverSelect.value = ''; // Reset to default
+    }
+
+    // Re-initialize Select2 for the driver dropdown
+    $(`#driver${rowId}`).select2('destroy'); // Destroy existing Select2 instance
+    $(`#driver${rowId}`).select2(); // Re-initialize Select2
+
+    // Trigger change event to update the UI
+    $(`#driver${rowId}`).trigger('change');
 }
+
+
     
 function populateDropDowns(rowId) {
     const drivers = document.querySelectorAll('#driversTable tbody tr');
@@ -542,7 +578,7 @@ function refreshDriverDropdowns() {
     rows.forEach((row) => {
         const rowId = row.getAttribute('data-row-id'); // Get the rowId from the data attribute
         updateDriverList(rowId); // Update the driver list for each row dynamically
-        $(`#driver${rowId}`).select2();  
+       // $(`#driver${rowId}`).select2();  
     });
 }
 
