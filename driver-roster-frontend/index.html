@@ -988,25 +988,28 @@ function collectRosterData() {
     // Utility function to convert table to a 2D array for Excel export
     // Utility function to convert table to a 2D array for Excel export
 function tableToArray(table) {
-    const data = [];
-    table.querySelectorAll('tr').forEach(row => {
-        const rowData = [];
-        row.querySelectorAll('th, td').forEach(cell => {
-            const input = cell.querySelector('input, select');
-            if (input) {
-                if (input.type === 'checkbox') {
-                    rowData.push(input.checked);
+        const data = [];
+        table.querySelectorAll('tr').forEach((row, index) => {
+            // Skip row 2 (which is index 1 since indexing starts at 0)
+            if (index === 1) return;
+    
+            const rowData = [];
+            row.querySelectorAll('th, td').forEach(cell => {
+                const input = cell.querySelector('input, select');
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        rowData.push(input.checked);
+                    } else {
+                        rowData.push(input.value);
+                    }
                 } else {
-                    rowData.push(input.value);
+                    rowData.push(cell.textContent.trim());
                 }
-            } else {
-                rowData.push(cell.textContent.trim());
-            }
+            });
+            data.push(rowData);
         });
-        data.push(rowData);
-    });
-    return data;
-}
+        return data;
+    }
 function tableToArrayWithStyles(table) {
     const data = [];
     const colors = {
