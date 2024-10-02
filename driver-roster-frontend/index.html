@@ -95,6 +95,13 @@
         tbody tr:nth-child(odd) {
          background-color: #f9f9f9;
         }
+        select {
+    width: 100px; /* Set the desired width */
+    max-width: 100px; /* Ensure it doesn't exceed this width */
+    padding: 5px;
+    box-sizing: border-box;
+    text-align: center;
+}
         /* Client Name Coloring */
 .client-sunrice {
     background-color: yellow;
@@ -127,6 +134,27 @@ select.client-bb {
 
 select.client-northeast {
     color: black;
+}
+/* Ensure the Trailer Type dropdown is of consistent width */
+.jobs-table select {
+    width: 100px; /* Adjust this value to set the width as desired */
+    max-width: 100px;
+}
+
+/* Ensure that the input fields for the # of jobs column are consistent */
+.jobs-table input[type="number"] {
+    width: 150px; /* Adjust as needed */
+}
+
+/* Fix the entire column width */
+.jobs-table th, .jobs-table td {
+    padding: 8px;
+    text-align: center;
+}
+
+.jobs-table select, .jobs-table input {
+    height: 35px; /* Ensures uniform height */
+    font-size: 14px; /* Ensures text size is consistent */
 }
 
         
@@ -245,8 +273,10 @@ select.client-northeast {
     <thead>
         <tr>
             <th>Date</th> 
-            <th>Trailer Rego</th>
-            <th>Truck Rego</th>
+            <th>Truck</th>
+            <th>Trailer</th>
+            <th>Trailer2</th>
+            <th>Trailer3</th>
             <th>Trailer Type</th> <!-- Changed Type to Trailer Type -->
             <th>Start Time</th>
             <th>Finish Time</th>
@@ -438,18 +468,18 @@ function getMelbourneDate() {
 
 
    
-    function deleteRow(rowId) {
-    const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
+    //function deleteRow(rowId) {
+   // const currentRowElement = document.querySelector(`#rosterTableBody tr:nth-child(${rowId})`);
     
     // Remove the selected row from the table
-    currentRowElement.remove(); 
+  //  currentRowElement.remove(); 
 
     // Reassign row IDs and element IDs after deletion (optional but recommended for consistency)
-    reassignRowIds();
+   // reassignRowIds();
 
     // Optionally, re-enable the jobs list confirm button if rows corresponding to a job were deleted
-    refreshJobListState(); // Refresh jobs list state after deletion
-}
+   // refreshJobListState(); // Refresh jobs list state after deletion
+//}
 
 function reassignRowIds() {
     const rows = document.querySelectorAll('#rosterTableBody tr');
@@ -460,8 +490,10 @@ function reassignRowIds() {
 
         // Update the IDs of all elements within the row
         row.querySelector(`input[type="date"]`).id = `date${newId}`;
-        row.querySelector(`#trailerRego${newId}`).id = `trailerRego${newId}`;
         row.querySelector(`#rego${rowId}`).id = `rego${newId}`;
+        row.querySelector(`#trailerRego${newId}`).id = `trailerRego${newId}`;
+        row.querySelector(`#trailer2${newId}`).id = `trailer2${newId}`; // Update for Trailer 2
+        row.querySelector(`#trailer3${newId}`).id = `trailer3${newId}`; 
         row.querySelector(`#type${rowId}`).id = `type${newId}`;
         row.querySelector(`#startTime${rowId}`).id = `startTime${newId}`;
         row.querySelector(`#finishTime${rowId}`).id = `finishTime${newId}`;
@@ -470,7 +502,7 @@ function reassignRowIds() {
         row.querySelector(`#constructionSite${rowId}`).id = `constructionSite${newId}`;
         row.querySelector(`#driver${rowId}`).id = `driver${newId}`;
         row.querySelector('.confirm-btn').setAttribute('onclick', `confirmRow(${newId})`);
-        row.querySelector('.delete-btn').setAttribute('onclick', `deleteRow(${newId})`);
+        
     });
 }
 
@@ -509,10 +541,15 @@ function addRow(selectedDate = '') {
 
     row.innerHTML = `
         <td><input type="date" id="date${rowId}" value="${selectedDate}"></td> <!-- Date Input -->
+        <td><select id="rego${rowId}"></select></td>
+
         <td>
             <select id="trailerRego${rowId}"></select> <!-- Trailer Rego dropdown -->
         </td>
-        <td><select id="rego${rowId}"></select></td>
+        <td><select id="trailer2${rowId}"></select></td> <!-- Trailer 2 dropdown -->
+        <td><select id="trailer3${rowId}"></select></td> <!-- Trailer 3 dropdown -->
+
+        
         <td>
             <select id="type${rowId}"></select> <!-- Trailer Type dropdown -->
         </td>
@@ -534,7 +571,7 @@ function addRow(selectedDate = '') {
         <td><select id="driver${rowId}"></select></td>
         <td>
             <button class="confirm-btn" onclick="confirmRow(${rowId})">Confirm</button>
-            <button class="delete-btn" onclick="deleteRow(${rowId})">Delete</button>
+            
         </td>
     `;
     tableBody.appendChild(row);
@@ -935,8 +972,10 @@ function collectRosterData() {
         const rowId = row.getAttribute('data-row-id');
         const data = {
             date: document.getElementById(`date${rowId}`).value,
-            trailerRego: document.getElementById(`trailerRego${rowId}`).value,
             rego: document.getElementById(`rego${rowId}`).value,
+            trailerRego: document.getElementById(`trailerRego${rowId}`).value,
+            trailer2: document.getElementById(`trailer2${rowId}`).value,
+            trailer3: document.getElementById(`trailer2${rowId}`).value,
             trailerType: document.getElementById(`type${rowId}`).value,
             startTime: document.getElementById(`startTime${rowId}`).value,
             finishTime: document.getElementById(`finishTime${rowId}`).value,
@@ -987,7 +1026,7 @@ function collectRosterData() {
 
     // Utility function to convert table to a 2D array for Excel export
     // Utility function to convert table to a 2D array for Excel export
-function tableToArray(table) {
+    function tableToArray(table) {
         const data = [];
         table.querySelectorAll('tr').forEach((row, index) => {
             // Skip row 2 (which is index 1 since indexing starts at 0)
@@ -1010,6 +1049,8 @@ function tableToArray(table) {
         });
         return data;
     }
+    
+
 function tableToArrayWithStyles(table) {
     const data = [];
     const colors = {
@@ -1061,39 +1102,36 @@ function refreshTrailerRegoDropdowns() {
 }
 function populateTrailerRegoDropdown(rowId) {
     const trailers = document.querySelectorAll('#trailersTable tbody tr');
-    const trailerSelect = document.getElementById(`trailerRego${rowId}`);
-    const currentValue = trailerSelect.value;
-    trailerSelect.innerHTML = '';
+    const trailerRegoSelect = document.getElementById(`trailerRego${rowId}`);
+    const trailer2Select = document.getElementById(`trailer2${rowId}`);
+    const trailer3Select = document.getElementById(`trailer3${rowId}`);
+    
+    [trailerRegoSelect, trailer2Select, trailer3Select].forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '';
 
-    let hasCurrentValue = false;
+        trailers.forEach(function (row) {
+            const trailerRego = row.cells[0].textContent.trim();
+            const option = document.createElement('option');
+            option.value = trailerRego;
+            option.textContent = trailerRego;
+            select.appendChild(option);
+        });
 
-    trailers.forEach(function (row) {
-        const trailerRego = row.cells[0].textContent.trim();
-        const option = document.createElement('option');
-        option.value = trailerRego;
-        option.textContent = trailerRego;
-        if (trailerRego === currentValue) {
-            hasCurrentValue = true;
-            option.selected = true;
+        if (!select.value) {
+            select.value = currentValue;
         }
-        trailerSelect.appendChild(option);
     });
 
-    if (!hasCurrentValue) {
-        trailerSelect.value = '';
-    }
-
-    // Re-initialize Select2 safely
-    const $trailerSelect = $(`#trailerRego${rowId}`);
-    if ($trailerSelect.hasClass('select2-hidden-accessible')) {
-        $trailerSelect.select2('destroy');
-    }
-    $trailerSelect.select2();
-
-    // Trigger change event to update the UI
-    $trailerSelect.trigger('change');
+    // Initialize or refresh Select2
+    [`#trailerRego${rowId}`, `#trailer2${rowId}`, `#trailer3${rowId}`].forEach(selectId => {
+        const $select = $(selectId);
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
+        }
+        $select.select2();
+    });
 }
-
 
     // Initial setup: add the first row, populate dropdowns, and set the current date
     window.onload = function() {
